@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ابزار تخمین تراز آزمون قلم‌چی - مدل هیبریدی رگرسیون محدودشده v6.0">
+    <meta name="author" content="Kankor Dashboard">
+    <title>تخمین تراز قلم‌چی | Kankor Dashboard v6.0</title>
+
+    <!-- ========================================
+         📌 فونت وزیرمتن از CDN
+         ======================================== -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+
+    <!-- ========================================
+         📌 استایل اصلی اپلیکیشن
+         ======================================== -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- حباب‌های دکوراتیو پس‌زمینه -->
+    <div class="deco-bubble deco-bubble--1" aria-hidden="true"></div>
+    <div class="deco-bubble deco-bubble--2" aria-hidden="true"></div>
+
+    <!-- ================================================
+         📦 Wrapper اصلی اپلیکیشن
+         ================================================ -->
+    <div class="app-wrapper" id="appWrapper">
+
+        <!-- ============================================
+             🏷️ هدر اصلی
+             ============================================ -->
+        <header class="app-header">
+            <div class="app-header__logo">📊</div>
+            <h1 class="app-header__title">تخمین تراز آزمون قلم‌چی</h1>
+            <p class="app-header__subtitle">درصد هر پایه رو وارد کن، تراز تخمینی‌ت رو ببین! ✨</p>
+            <div class="app-header__meta">
+                <span class="app-header__badge badge--date" id="todayDate"></span>
+                <span class="app-header__badge badge--version">v6.0</span>
+                <span class="app-header__badge badge--accuracy">دقت: ±۱۵۰ تراز</span>
+            </div>
+        </header>
+
+        <!-- ============================================
+             🔘 بخش انتخاب رشته
+             ============================================ -->
+        <section class="field-selector" aria-label="انتخاب رشته تحصیلی">
+            <label class="field-selector__label">🎓 رشته‌ات رو انتخاب کن:</label>
+            <div class="field-selector__grid">
+                <button class="field-btn" data-field="tajrobi" onclick="selectField('tajrobi')" aria-pressed="false">
+                    <span class="field-btn__icon">🧬</span>
+                    <span>تجربی</span>
+                </button>
+                <button class="field-btn" data-field="riazi" onclick="selectField('riazi')" aria-pressed="false">
+                    <span class="field-btn__icon">📐</span>
+                    <span>ریاضی</span>
+                </button>
+                <button class="field-btn" data-field="ensani" onclick="selectField('ensani')" aria-pressed="false">
+                    <span class="field-btn__icon">📖</span>
+                    <span>انسانی</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ============================================
+             📚 بخش ورود دروس اختصاصی
+             ============================================ -->
+        <section class="scores-section" id="subjectsSection" aria-label="ورود درصد دروس">
+            <div class="section-title">
+                <span class="section-title__line"></span>
+                🎯 دروس اختصاصی
+                <span class="section-title__line"></span>
+            </div>
+            <div class="subjects-container" id="subjectsContainer">
+                <!-- پنل‌ها با JavaScript ساخته می‌شوند -->
+            </div>
+        </section>
+
+        <!-- ============================================
+             🔘 دکمه‌های عملیاتی
+             ============================================ -->
+        <section class="scores-section" id="actionsSection" aria-label="عملیات">
+            <div class="actions-row">
+                <button class="btn btn--primary" onclick="runCalculation()">
+                    <span class="btn__icon">🧮</span>
+                    محاسبه تراز
+                </button>
+                <button class="btn btn--export" onclick="exportPNG()">
+                    <span class="btn__icon">📸</span>
+                    خروجی PNG
+                </button>
+                <button class="btn btn--danger" onclick="resetAll()">
+                    <span class="btn__icon">🗑️</span>
+                    پاک‌سازی
+                </button>
+            </div>
+        </section>
+
+        <!-- ============================================
+             📊 بخش نمایش نتایج (Bento Grid)
+             ============================================ -->
+        <section class="result-section" id="resultSection" aria-label="نتایج تخمینی">
+            <div class="section-title">
+                <span class="section-title__line"></span>
+                📊 نتایج تخمینی
+                <span class="section-title__line"></span>
+            </div>
+            <div class="result-bento" id="resultBento">
+                <div class="result-placeholder">
+                    <div class="result-placeholder__icon">🎯</div>
+                    <div class="result-placeholder__text">درصدها رو وارد کن و دکمه «محاسبه تراز» رو بزن!</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             🐾 فوتر
+             ============================================ -->
+        <footer class="app-footer">
+            ساخته شده با 💜 برای کنکوری‌های جنگجو &nbsp;|&nbsp; مدل v6.0 — Hybrid Constrained Regression
+        </footer>
+    </div>
+
+    <!-- ========================================
+         📌 کتابخانه html2canvas برای خروجی PNG
+         ======================================== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- ========================================
+         📌 اسکریپت اصلی اپلیکیشن
+         ======================================== -->
+    <script src="app.js"></script>
+</body>
+</html>
