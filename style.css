@@ -1,5 +1,5 @@
 /* ================================================================
- *  📊 Kankor Dashboard v1.2.1 — Stylesheet
+ *  📊 Kankor Dashboard v1.2.2 — Stylesheet
  *  ================================================================
  *  Design System: Bento Grid 30% + Glassmorphism 40% + Neumorphism 30%
  *  Theme: Pearl White + Pastel Accents
@@ -1328,4 +1328,21 @@ body::after {
 }
 
 
+/* ============================================================
+   📸 SECTION 20: Export Overlay (لایه موقت خروجی PNG)
+   ============================================================
+   وقتی exportPNG صدا زده میشه، یک wrapper مخفی ساخته میشه
+   این استایل‌ها فقط برای اون wrapper هستن
+   ============================================================ */
+#exportWrapper {
+    /* مطمئن میشیم backdrop-filter و filter مشکل نسازن */
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    filter: none !important;
+}
 
+#exportWrapper * {
+    /* حذف هرگونه filter یا backdrop از المان‌های داخلی */
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
