@@ -1,6 +1,6 @@
 /**
  * ╔═══════════════════════════════════════════════════════╗
- * ║  Balance Calculator – Engine v7.0 (3-Grade Weighted)  ║
+ * ║  Balance Calculator – Engine v6.1 (3-Grade Weighted)  ║
  * ║  Build: 2026-02-26 | "mmkeshavarzz"                   ║
  * ╠═══════════════════════════════════════════════════════╣
  * ║  Core formula:                                        ║
@@ -20,24 +20,21 @@
   var BASE_SCORE  = 4350;
   var COEFF       = 40.2;
 
-  /* ─── §2  SUBJECT CATALOGUE ─── */
-  var SUBJECTS = [
-    { id: "lit",   label: "ادبیات فارسی",     wf: 4 },
-    { id: "arab",  label: "عربی",              wf: 2 },
-    { id: "din",   label: "دینی",              wf: 3 },
-    { id: "zaban", label: "زبان انگلیسی",      wf: 2 },
-    { id: "r1",    label: "ریاضیات پایه",      wf: 3 },
-    { id: "r2",    label: "ریاضیات تکمیلی",    wf: 4 },
-    { id: "fiz",   label: "فیزیک",             wf: 3 },
-    { id: "shimi", label: "شیمی",              wf: 2 },
-    { id: "zist",  label: "زیست‌شناسی",        wf: 4 }
-  ];
+ /* ─── §2  SUBJECT CATALOGUE (Konkoor Weights – Model v6.1) ─── */
+var SUBJECTS = [
+  { id: "zist",  label: "🧬 زیست‌شناسی",  wf: 12 },
+  { id: "shimi", label: "🧪 شیمی",         wf: 9  },
+  { id: "fiz",   label: "⚡ فیزیک",        wf: 6  },
+  { id: "riyazi", label: "📐 ریاضی",       wf: 6  },
+  { id: "zamin", label: "🌍 زمین‌شناسی",   wf: 1  }
+];
+
 
   /* ─── §3  APPLICATION STATE ─── */
-  var state = {};
-  SUBJECTS.forEach(function (s) {
-    state[s.id] = { p10: 0, p11: 0, p12: 0, on: true };
-  });
+var state = {};
+SUBJECTS.forEach(function (s) {
+  state[s.id] = { p10: 0, p11: 0, p12: 0, on: true };
+});
 
   /* ─── §4  DOM CACHE ─── */
   var listEl, trazEl, barEl, barTxt;
@@ -169,6 +166,22 @@
     if (traz < 4350) traz = 4350;
     if (traz > 8370) traz = 8370;
 
+        /* ── Level Detection ── */
+    var levelInfo = getLevel(traz);
+    var levelEl = document.getElementById("levelBadge");
+    if (levelEl) {
+      levelEl.textContent = levelInfo.current.emoji + " " + 
+                            levelInfo.current.name + " – " + 
+                            levelInfo.current.league;
+      levelEl.style.background = levelInfo.current.color;
+    }
+    var nextEl = document.getElementById("nextLevel");
+    if (nextEl && levelInfo.next) {
+      nextEl.textContent = "تا " + levelInfo.next.name + ": " + 
+                           levelInfo.trazToNext + " تراز مونده";
+    }
+
+
     /* ── Update DOM ── */
     animateNumber(trazEl, traz);
     var pct = Math.round(((traz - 4350) / (8370 - 4350)) * 100);
@@ -183,8 +196,57 @@
     } else {
       barEl.className = "bar-fill high";
     }
+      updateROI();
+
   }
 
+  /* ─── §8.1  LEVEL DETECTION ─── */
+function getLevel(traz) {
+  var levels = [
+    { name: "L5", emoji: "⚡", league: "لیگ خدایان",   min: 7200, uni: "شهید بهشتی تهران",    color: "#FFD700" },
+    { name: "L4", emoji: "🏆", league: "لیگ قهرمانان", min: 6800, uni: "شیراز / اصفهان / مشهد", color: "#C0C0C0" },
+    { name: "L3", emoji: "🥇", league: "لیگ حرفه‌ای",  min: 6270, uni: "کرمان / گیلان / تبریز",  color: "#CD7F32" },
+    { name: "L2", emoji: "🥈", league: "لیگ آماتور",   min: 5920, uni: "اهواز / همدان / زنجان",   color: "#87CEEB" },
+    { name: "L1", emoji: "🥉", league: "لیگ مبتدی",    min: 5500, uni: "شهرستان‌ها",             color: "#90EE90" },
+    { name: "L0", emoji: "💤", league: "خواب‌آلود",     min: 0,    uni: "...",                     color: "#DDD"    }
+  ];
+
+  for (var i = 0; i < levels.length; i++) {
+    if (traz >= levels[i].min) {
+      return {
+        current: levels[i],
+        next: i > 0 ? levels[i - 1] : null,
+        trazToNext: i > 0 ? levels[i - 1].min - traz : 0
+      };
+    }
+  }
+  return { current: levels[5], next: levels[4], trazToNext: levels[4].min - traz };
+}
+
+
+  /* ─── §8.2  SUBJECT ROI DISPLAY ─── */
+function updateROI() {
+  var roiEl = document.getElementById("roiList");
+  if (!roiEl) return;
+
+  var totalW = 0;
+  SUBJECTS.forEach(function (s) { if (state[s.id].on) totalW += s.wf; });
+
+  var html = "";
+  SUBJECTS.forEach(function (sub) {
+    if (!state[sub.id].on) return;
+    var trazPer1Pct = (COEFF * sub.wf / totalW).toFixed(1);
+    var share = (sub.wf / totalW * 100).toFixed(0);
+    html += '<div class="roi-item">' +
+              '<span class="roi-label">' + sub.label + '</span>' +
+              '<span class="roi-value">+' + trazPer1Pct + ' تراز/۱٪</span>' +
+              '<span class="roi-share">' + share + '٪</span>' +
+            '</div>';
+  });
+  roiEl.innerHTML = html;
+}
+
+  
   /* ─── §9  ANIMATE NUMBER ─── */
   function animateNumber(el, target) {
     var start = parseInt(el.textContent) || 0;
@@ -266,3 +328,4 @@
   window.resetAll = resetAll;
 
 })();
+
