@@ -931,7 +931,11 @@ function resetResultPanel() {
 
 
 /* ────────────────────────────────────────────────────────────────
- *  📸 SECTION 12: PNG Export (خروجی تصویری)
+ *  📸 SECTION 12: PNG Export (خروجی تصویری — نسخه گزارش مشاور)
+ * ──────────────────────────────────────────────────────────────── 
+ *  خروجی A4 عمودی (794×1123px @2x)
+ *  فقط اطلاعات ضروری: تراز، جزئیات دروس، سطح، فاصله تا اهداف
+ *  بدون دکمه، اینپوت، تاگل و فرمول
  * ──────────────────────────────────────────────────────────────── */
 
 function exportPNG() {
@@ -940,28 +944,264 @@ function exportPNG() {
         return;
     }
 
-    showToast('📸 در حال گرفتن اسکرین‌شات...');
+    /* ───── محاسبه تراز ───── */
+    const result = calculateTraz(currentField);
+    if (!result) {
+        showToast('❌ خطا در محاسبه!');
+        return;
+    }
 
-    const target = document.getElementById('appWrapper');
+    showToast('📸 در حال ساخت گزارش...');
 
-    html2canvas(target, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#F8F6F2',
-        logging: false,
-        windowWidth: target.scrollWidth,
-        windowHeight: target.scrollHeight,
-    }).then(canvas => {
-        const link = document.createElement('a');
-        const fieldName = MAJORS[currentField]?.name || 'taraz';
-        link.download = `taraz-qalamchi-${fieldName}-${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        showToast('✅ تصویر دانلود شد!');
-    }).catch(err => {
-        console.error('[ExportPNG] Error:', err);
-        showToast('❌ خطا در ساخت تصویر!');
+    /* ───── ابعاد A4 عمودی (96 DPI × 2 برای کیفیت) ───── */
+    const A4_W = 794;
+    const A4_H = 1123;
+
+    /* ───── ساخت یک div مخفی برای رندر ───── */
+    const wrapper = document.createElement('div');
+    wrapper.id = 'exportWrapper';
+    wrapper.style.cssText = `
+        position: fixed;
+        top: -99999px;
+        left: -99999px;
+        width: ${A4_W}px;
+        min-height: ${A4_H}px;
+        background: linear-gradient(145deg, #F8F6F2 0%, #F0ECE4 50%, #F8F6F2 100%);
+        font-family: 'Vazirmatn', sans-serif;
+        direction: rtl;
+        padding: 40px;
+        box-sizing: border-box;
+        color: #2D2D3A;
+        overflow: hidden;
+    `;
+
+    const level = result.level;
+    const now = new Date().toLocaleDateString('fa-IR', {
+        year: 'numeric', month: 'long', day: 'numeric'
     });
+
+    /* ───── جزئیات دروس ───── */
+    let subjectRowsHTML = '';
+    let rowIndex = 0;
+    for (const [key, d] of Object.entries(result.details)) {
+        const isDisabled = d.disabled;
+        const bgColor = rowIndex % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent';
+
+        let gradeNote = '';
+        if (!isDisabled && d.disabledGrades && d.disabledGrades.length > 0) {
+            gradeNote = `<span style="color:#E6A23C;font-size:11px;margin-right:4px;">
+                (${d.activeGradeCount}/${d.totalGradeCount} پایه)
+            </span>`;
+        }
+
+        subjectRowsHTML += `
+            <tr style="background:${bgColor};${isDisabled ? 'opacity:0.35;text-decoration:line-through;' : ''}">
+                <td style="padding:10px 14px;text-align:right;font-size:13px;border-bottom:1px solid rgba(0,0,0,0.05);">
+                    ${d.emoji} ${d.name} ${gradeNote}
+                    ${isDisabled ? '<span style="background:#FF6B6B;color:#fff;padding:1px 6px;border-radius:20px;font-size:10px;margin-right:4px;">OFF</span>' : ''}
+                </td>
+                <td style="padding:10px 14px;text-align:center;font-size:13px;font-weight:700;border-bottom:1px solid rgba(0,0,0,0.05);">
+                    ${isDisabled ? '—' : d.weightedAverage + '٪'}
+                </td>
+                <td style="padding:10px 14px;text-align:center;font-size:13px;border-bottom:1px solid rgba(0,0,0,0.05);">
+                    ×${d.konkur_weight}
+                </td>
+            </tr>
+        `;
+        rowIndex++;
+    }
+
+    /* ───── اهداف ───── */
+    const targets = [
+        { name: "پزشکی آزاد / سایر", traz: 5700 },
+        { name: "پزشکی اهواز / همدان", traz: 6000 },
+        { name: "پزشکی کرمان / گیلان", traz: 6200 },
+        { name: "پزشکی مشهد / تبریز", traz: 6400 },
+        { name: "پزشکی شیراز / اصفهان", traz: 6700 },
+        { name: "پزشکی تهران / بهشتی", traz: 7000 },
+    ];
+
+    let targetsHTML = '';
+    targets.forEach(t => {
+        const diff = t.traz - result.traz;
+        let statusColor, statusText;
+        if (diff <= 0) {
+            statusColor = '#43E97B';
+            statusText = '✅ رسیدی!';
+        } else if (diff <= 300) {
+            statusColor = '#E6A23C';
+            statusText = `⬆️ +${diff}`;
+        } else {
+            statusColor = '#FF6B6B';
+            statusText = `⬆️ +${diff}`;
+        }
+        targetsHTML += `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed rgba(0,0,0,0.06);font-size:12px;">
+                <span>🏛️ ${t.name}</span>
+                <span style="color:${statusColor};font-weight:700;">${statusText}</span>
+            </div>
+        `;
+    });
+
+    /* ───── هشدار دروس غیرفعال ───── */
+    let disabledWarning = '';
+    if (result.disabledSubjectNames.length > 0) {
+        disabledWarning = `
+            <div style="margin-top:20px;padding:12px 16px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:12px;">
+                <div style="font-size:12px;font-weight:700;color:#FF6B6B;margin-bottom:6px;">⚠️ دروس حذف‌شده از محاسبه:</div>
+                <div style="font-size:11px;color:#666;">
+                    ${result.disabledSubjectNames.map(n => `🔇 ${n}`).join(' &nbsp;•&nbsp; ')}
+                </div>
+            </div>
+        `;
+    }
+
+    /* ───── تزریق HTML کامل گزارش ───── */
+    wrapper.innerHTML = `
+        <!-- هدر گزارش -->
+        <div style="text-align:center;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid rgba(0,0,0,0.06);">
+            <div style="font-size:22px;font-weight:900;color:#2D2D3A;margin-bottom:4px;">
+                📊 گزارش تخمین تراز قلم‌چی
+            </div>
+            <div style="font-size:12px;color:#888;margin-top:6px;">
+                ${result.majorEmoji} رشته: ${result.major} &nbsp;|&nbsp; 📅 تاریخ: ${now}
+            </div>
+        </div>
+
+        <!-- کارت اصلی تراز -->
+        <div style="
+            background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.5));
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 20px;
+            padding: 28px;
+            text-align: center;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+        ">
+            <div style="font-size:14px;color:#888;margin-bottom:8px;">تراز تخمینی</div>
+            <div style="font-size:56px;font-weight:900;color:#2D2D3A;line-height:1.1;">
+                ${result.traz}
+            </div>
+            <div style="margin-top:12px;display:inline-flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center;">
+                <span style="background:rgba(67,233,123,0.15);color:#2D8F5E;padding:6px 16px;border-radius:50px;font-size:13px;font-weight:700;">
+                    ${level.emoji} ${level.name}
+                </span>
+                <span style="background:rgba(56,178,227,0.1);color:#2878A8;padding:6px 16px;border-radius:50px;font-size:13px;font-weight:700;">
+                    ${level.league}
+                </span>
+                <span style="background:rgba(176,130,255,0.1);color:#7B52CC;padding:6px 16px;border-radius:50px;font-size:13px;font-weight:700;">
+                    📏 نمره وزن‌دار: ${result.weightedScore}
+                </span>
+            </div>
+            <div style="margin-top:10px;font-size:11px;color:#999;">
+                ${result.activeSubjectCount} درس فعال از ${Object.keys(result.details).length}
+            </div>
+        </div>
+
+        <!-- جدول دروس -->
+        <div style="
+            background: rgba(255,255,255,0.6);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        ">
+            <div style="padding:14px 18px;font-size:14px;font-weight:800;border-bottom:1px solid rgba(0,0,0,0.06);">
+                📋 میانگین وزن‌دار هر درس
+            </div>
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr style="background:rgba(0,0,0,0.03);">
+                        <th style="padding:10px 14px;text-align:right;font-size:11px;color:#888;font-weight:600;">درس</th>
+                        <th style="padding:10px 14px;text-align:center;font-size:11px;color:#888;font-weight:600;">میانگین</th>
+                        <th style="padding:10px 14px;text-align:center;font-size:11px;color:#888;font-weight:600;">ضریب</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${subjectRowsHTML}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- فاصله تا اهداف -->
+        <div style="
+            background: rgba(255,255,255,0.6);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        ">
+            <div style="font-size:14px;font-weight:800;margin-bottom:12px;">🎯 فاصله تا اهداف</div>
+            ${targetsHTML}
+        </div>
+
+        ${disabledWarning}
+
+        <!-- فوتر -->
+        <div style="
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0,0,0,0.06);
+            font-size: 10px;
+            color: #AAA;
+        ">
+            🛠️ ساخته‌شده با ابزار تخمین تراز قلم‌چی v${MODEL_CONFIG.version}
+            &nbsp;|&nbsp;
+            این تخمین جایگزین نتایج رسمی نیست و صرفاً جهت برنامه‌ریزی است.
+        </div>
+    `;
+
+    /* ───── تزریق به DOM و رندر ───── */
+    document.body.appendChild(wrapper);
+
+    /* صبر برای رندر کامل فونت‌ها و لی‌اوت */
+    setTimeout(() => {
+        html2canvas(wrapper, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: null,   /* ← مهم! لایه سفید اضافی حذف میشه */
+            logging: false,
+            width: A4_W,
+            height: Math.max(A4_H, wrapper.scrollHeight),
+            windowWidth: A4_W,
+            windowHeight: Math.max(A4_H, wrapper.scrollHeight),
+        }).then(canvas => {
+            /* ─── ساخت canvas نهایی با بک‌گراند ─── */
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width  = canvas.width;
+            finalCanvas.height = canvas.height;
+            const ctx = finalCanvas.getContext('2d');
+
+            /* بک‌گراند گرادیان */
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#F8F6F2');
+            gradient.addColorStop(0.5, '#F0ECE4');
+            gradient.addColorStop(1, '#F8F6F2');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            /* رسم محتوا روی بک‌گراند */
+            ctx.drawImage(canvas, 0, 0);
+
+            /* دانلود */
+            const link = document.createElement('a');
+            const fieldName = MAJORS[currentField]?.name || 'taraz';
+            link.download = `گزارش-تراز-${fieldName}-${Date.now()}.png`;
+            link.href = finalCanvas.toDataURL('image/png', 0.95);
+            link.click();
+
+            showToast('✅ گزارش A4 دانلود شد!');
+        }).catch(err => {
+            console.error('[ExportPNG] Error:', err);
+            showToast('❌ خطا در ساخت تصویر!');
+        }).finally(() => {
+            /* پاکسازی wrapper مخفی */
+            wrapper.remove();
+        });
+    }, 500);
 }
 
 
@@ -1077,3 +1317,4 @@ function showToast(message) {
         selectField(currentField);
     }
 })();
+
