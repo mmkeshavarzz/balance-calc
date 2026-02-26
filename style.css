@@ -1,5 +1,5 @@
 /* ================================================================
- *  📊 Kankor Dashboard v6.0 — Stylesheet
+ *  📊 Kankor Dashboard v1.2.0 — Stylesheet
  *  ================================================================
  *  Design System: Bento Grid 30% + Glassmorphism 40% + Neumorphism 30%
  *  Theme: Pearl White + Pastel Accents
@@ -1158,3 +1158,173 @@ body::after {
         text-align: center;
     }
 }
+
+/* ============================================================
+   🔘 SECTION 18: Toggle Switches (سوئیچ خاموش/روشن)
+   ============================================================
+   دو نوع تاگل داریم:
+   1) تاگل کل درس (روی هدر پنل)
+   2) تاگل تکی هر پایه (کنار اینپوت)
+   ============================================================ */
+
+/* --- Toggle Switch Base --- */
+.toggle-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.toggle-switch__input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.toggle-switch__slider {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    border-radius: 50px;
+    transition: var(--transition-smooth);
+    background: var(--bg-shell);
+    box-shadow:
+        inset 2px 2px 5px var(--shadow-neo-dark),
+        inset -2px -2px 5px var(--shadow-neo-light);
+}
+
+.toggle-switch__slider::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--pastel-pink);
+    transition: var(--transition-smooth);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* حالت فعال (روشن) */
+.toggle-switch__input:checked + .toggle-switch__slider {
+    box-shadow:
+        inset 2px 2px 5px var(--shadow-neo-dark),
+        inset -2px -2px 5px var(--shadow-neo-light),
+        0 0 0 2px rgba(67, 233, 123, 0.2);
+}
+
+.toggle-switch__input:checked + .toggle-switch__slider::after {
+    right: calc(100% - 19px);
+    background: var(--pastel-green);
+}
+
+.toggle-switch__label-text {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* --- تاگل کل درس (بزرگ‌تر) --- */
+.toggle-subject {
+    margin-right: auto;
+    flex-shrink: 0;
+}
+
+.toggle-subject .toggle-switch__slider {
+    width: 44px;
+    height: 24px;
+}
+
+.toggle-subject .toggle-switch__slider::after {
+    width: 18px;
+    height: 18px;
+}
+
+.toggle-subject .toggle-switch__input:checked + .toggle-switch__slider::after {
+    right: calc(100% - 21px);
+}
+
+/* --- تاگل تکی پایه (کوچیک‌تر) --- */
+.toggle-grade {
+    justify-content: center;
+    margin-top: 4px;
+}
+
+.toggle-grade .toggle-switch__slider {
+    width: 32px;
+    height: 18px;
+}
+
+.toggle-grade .toggle-switch__slider::after {
+    width: 12px;
+    height: 12px;
+    top: 3px;
+    right: 3px;
+}
+
+.toggle-grade .toggle-switch__input:checked + .toggle-switch__slider::after {
+    right: calc(100% - 15px);
+}
+
+
+/* ============================================================
+   🔘 SECTION 19: Disabled States (حالت غیرفعال)
+   ============================================================ */
+
+/* --- کل پنل درس غیرفعال --- */
+.subject-panel.panel--disabled {
+    opacity: 0.4;
+    filter: grayscale(0.6);
+    pointer-events: none;
+    transform: scale(0.98);
+}
+
+/* فقط تاگل اصلی همچنان قابل کلیکه */
+.subject-panel.panel--disabled .toggle-subject {
+    pointer-events: all;
+    opacity: 1;
+    filter: none;
+}
+
+/* --- تک پایه غیرفعال --- */
+.grade-input-group.grade--disabled {
+    opacity: 0.35;
+    filter: grayscale(0.5);
+}
+
+.grade-input-group.grade--disabled .percent-input {
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.04);
+    box-shadow:
+        inset 2px 2px 5px rgba(174, 174, 192, 0.15),
+        inset -2px -2px 5px rgba(255, 255, 255, 0.5);
+}
+
+/* --- بج «غیرفعال» --- */
+.disabled-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 50px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    background: var(--danger-gradient);
+    color: #fff;
+    margin-right: 6px;
+    animation: popIn 0.3s ease;
+}
+
+/* --- Strikethrough برای اسم درس غیرفعال --- */
+.subject-panel.panel--disabled .subject-panel__name {
+    text-decoration: line-through;
+    text-decoration-color: var(--pastel-pink);
+    text-decoration-thickness: 2px;
+}
+
+
