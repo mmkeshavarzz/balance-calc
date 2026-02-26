@@ -20,9 +20,9 @@
  * ──────────────────────────────────────────────────────────────── */
 
 const MODEL_CONFIG = {
-    version: "6.2",
+    version: "6.1",
     beta0: 4350,
-    k: 40,
+    k: 40.2,
     gradeWeights: {
         10: 1.0,
         11: 1.5,
@@ -43,7 +43,7 @@ const MAJORS = {
             biology: {
                 name: "زیست‌شناسی",
                 emoji: "🧬",
-                konkur_weight: 3,
+                konkur_weight: 12,
                 grades: [10, 11, 12],
                 color: "mint",
                 labels: {
@@ -55,7 +55,7 @@ const MAJORS = {
             physics: {
                 name: "فیزیک",
                 emoji: "⚡",
-                konkur_weight: 2,
+                konkur_weight: 6,
                 grades: [10, 11, 12],
                 color: "sky",
                 labels: {
@@ -67,7 +67,7 @@ const MAJORS = {
             chemistry: {
                 name: "شیمی",
                 emoji: "🧪",
-                konkur_weight: 2,
+                konkur_weight: 9,
                 grades: [10, 11, 12],
                 color: "lavender",
                 labels: {
@@ -79,7 +79,7 @@ const MAJORS = {
             math: {
                 name: "ریاضی",
                 emoji: "📐",
-                konkur_weight: 2,
+                konkur_weight: 6,
                 grades: [10, 11, 12],
                 color: "purple",
                 labels: {
