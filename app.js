@@ -1,13 +1,14 @@
 /* ================================================================
- *  📊 Kankor Dashboard v1.2.1 — Application Logic
+ *  📊 Kankor Dashboard v1.2.2 — Application Logic
  *  ================================================================
  *  Engine: Hybrid Constrained Regression Model
  *  Formula: Traz = β₀ + k × S_weighted
  *  
- *  NEW in v1.2.1:
+ *  NEW in v1.2.2:
  *    - Toggle subject ON/OFF (exclude from calculation)
  *    - Toggle individual grade ON/OFF
  *    - Persistent toggle state in localStorage
+ *    - Fixed PNG export (white image bug resolved)
  *
  *  Author: Kankor Dashboard Team
  *  Last Updated: 2026-02-26
@@ -19,7 +20,7 @@
  * ──────────────────────────────────────────────────────────────── */
 
 const MODEL_CONFIG = {
-    version: "6.1",
+    version: "6.2",
     beta0: 4350,
     k: 40,
     gradeWeights: {
@@ -275,18 +276,28 @@ function selectField(field) {
     currentField = field;
     localStorage.setItem('kd_selectedField', field);
 
+    /* آپدیت دکمه‌های رشته */
     document.querySelectorAll('.field-btn').forEach(btn => {
         const isActive = btn.dataset.field === field;
         btn.classList.toggle('active', isActive);
         btn.setAttribute('aria-pressed', isActive);
     });
 
+    /* ساخت پنل‌ها */
     renderSubjects(field);
 
+    /* نمایش سکشن‌ها */
     document.getElementById('subjectsSection').classList.add('visible');
-    document.getElementById('actionsSection').classList.add('visible');
+
+    const actionsEl = document.getElementById('actionsSection');
+    if (actionsEl) {
+        actionsEl.style.opacity = '1';
+        actionsEl.style.pointerEvents = 'all';
+    }
+
     document.getElementById('resultSection').classList.add('visible');
 
+    /* ریست و بازیابی */
     resetResultPanel();
     restoreSavedValues();
     restoreToggleStates();
@@ -327,10 +338,10 @@ function buildToggleHTML(id, checked, extraClass, onChange, labelText = '') {
  */
 function buildSubjectPanelHTML(subjectKey, subjectDef) {
     const gradeCount = subjectDef.grades.length;
-    const gridClass = `grades-grid--${gradeCount}`;
+    const gridClass  = `grades-grid--${gradeCount}`;
 
     /* تاگل کل درس */
-    const subjectToggleId = `toggle_subject_${subjectKey}`;
+    const subjectToggleId   = `toggle_subject_${subjectKey}`;
     const subjectToggleHTML = buildToggleHTML(
         subjectToggleId,
         true,
@@ -341,9 +352,9 @@ function buildSubjectPanelHTML(subjectKey, subjectDef) {
 
     /* ساخت اینپوت هر پایه + تاگل پایه */
     const gradeInputsHTML = subjectDef.grades.map(grade => {
-        const inputId     = `input_${subjectKey}_${grade}`;
-        const toggleId    = `toggle_grade_${subjectKey}_${grade}`;
-        const label       = subjectDef.labels[grade] || `پایه ${grade}`;
+        const inputId  = `input_${subjectKey}_${grade}`;
+        const toggleId = `toggle_grade_${subjectKey}_${grade}`;
+        const label    = subjectDef.labels[grade] || `پایه ${grade}`;
 
         const gradeToggleHTML = buildToggleHTML(
             toggleId,
@@ -403,7 +414,7 @@ function buildSubjectPanelHTML(subjectKey, subjectDef) {
 
 function renderSubjects(field) {
     const container = document.getElementById('subjectsContainer');
-    const major = MAJORS[field];
+    const major     = MAJORS[field];
     if (!major || !container) return;
 
     let html = '';
@@ -420,10 +431,6 @@ function renderSubjects(field) {
 
 /**
  * خاموش/روشن کردن کل یک درس
- * وقتی خاموشه، کل پنل محو و غیرفعال میشه
- * و از محاسبه تراز حذف میشه
- *
- * @param {string} subjectKey - کلید درس
  */
 function toggleSubject(subjectKey) {
     const checkbox = document.getElementById(`toggle_subject_${subjectKey}`);
@@ -431,23 +438,13 @@ function toggleSubject(subjectKey) {
     if (!checkbox || !panel) return;
 
     const isEnabled = checkbox.checked;
-
-    /* آپدیت ظاهری پنل */
     panel.classList.toggle('panel--disabled', !isEnabled);
-
-    /* ذخیره وضعیت */
     localStorage.setItem(`kd_toggle_subject_${subjectKey}`, isEnabled ? '1' : '0');
-
-    /* آپدیت میانگین */
     updateSubjectAvg(subjectKey);
 }
 
 /**
- * خاموش/روشن کردن یک پایه خاص از یک درس
- * فقط اون پایه از محاسبه حذف میشه
- *
- * @param {string} subjectKey - کلید درس
- * @param {number} grade - شماره پایه (10, 11, 12)
+ * خاموش/روشن کردن یک پایه خاص
  */
 function toggleGrade(subjectKey, grade) {
     const checkbox   = document.getElementById(`toggle_grade_${subjectKey}_${grade}`);
@@ -455,21 +452,13 @@ function toggleGrade(subjectKey, grade) {
     if (!checkbox || !gradeGroup) return;
 
     const isEnabled = checkbox.checked;
-
-    /* آپدیت ظاهری */
     gradeGroup.classList.toggle('grade--disabled', !isEnabled);
-
-    /* ذخیره وضعیت */
     localStorage.setItem(`kd_toggle_grade_${subjectKey}_${grade}`, isEnabled ? '1' : '0');
-
-    /* آپدیت میانگین */
     updateSubjectAvg(subjectKey);
 }
 
 /**
- * چک کردن فعال بودن کل درس
- * @param {string} subjectKey
- * @returns {boolean}
+ * چک فعال بودن کل درس
  */
 function isSubjectEnabled(subjectKey) {
     const checkbox = document.getElementById(`toggle_subject_${subjectKey}`);
@@ -477,10 +466,7 @@ function isSubjectEnabled(subjectKey) {
 }
 
 /**
- * چک کردن فعال بودن یک پایه خاص
- * @param {string} subjectKey
- * @param {number} grade
- * @returns {boolean}
+ * چک فعال بودن یک پایه خاص
  */
 function isGradeEnabled(subjectKey, grade) {
     const checkbox = document.getElementById(`toggle_grade_${subjectKey}_${grade}`);
@@ -488,7 +474,7 @@ function isGradeEnabled(subjectKey, grade) {
 }
 
 /**
- * بازیابی وضعیت تاگل‌ها از localStorage و اعمال روی UI
+ * بازیابی وضعیت تاگل‌ها از localStorage
  */
 function restoreToggleStates() {
     if (!currentField) return;
@@ -544,7 +530,7 @@ function handleInput(inputEl, subjectKey) {
 
 /**
  * محاسبه و نمایش میانگین وزن‌دار یک درس
- * ⚡ آپدیت شده: فقط پایه‌های فعال رو در نظر می‌گیره
+ * فقط پایه‌های فعال در نظر گرفته میشن
  */
 function updateSubjectAvg(subjectKey) {
     if (!currentField) return;
@@ -561,12 +547,11 @@ function updateSubjectAvg(subjectKey) {
         return;
     }
 
-    const scores         = {};
-    const activeGrades   = [];
+    const scores       = {};
+    const activeGrades = [];
     let hasAny = false;
 
     def.grades.forEach(grade => {
-        /* فقط پایه‌های فعال */
         if (!isGradeEnabled(subjectKey, grade)) return;
 
         const input = document.getElementById(`input_${subjectKey}_${grade}`);
@@ -600,7 +585,7 @@ function restoreSavedValues() {
     for (const [key, def] of Object.entries(major.subjects)) {
         def.grades.forEach(grade => {
             const storageKey = `kd_${key}_${grade}`;
-            const saved = localStorage.getItem(storageKey);
+            const saved      = localStorage.getItem(storageKey);
             if (saved !== null && saved !== '') {
                 const input = document.getElementById(`input_${key}_${grade}`);
                 if (input) {
@@ -633,7 +618,7 @@ function calcSubjectAverage(scores, activeGrades) {
         const p = (scores[grade] != null && !isNaN(scores[grade]))
             ? Math.max(0, Math.min(100, scores[grade]))
             : 0;
-        const alpha = getGradeWeight(grade);
+        const alpha  = getGradeWeight(grade);
         numerator   += alpha * p;
         denominator += alpha;
     }
@@ -649,7 +634,6 @@ function calcWeightedScore(subjectAverages, subjectDefs) {
     let denominator = 0;
 
     for (const [key, def] of Object.entries(subjectDefs)) {
-        /* ⚡ اگه درس خاموشه، ازش رد شو */
         if (!isSubjectEnabled(key)) continue;
 
         const w   = def.konkur_weight;
@@ -681,7 +665,6 @@ function getLevel(traz) {
 
 /**
  * 🎯 تابع اصلی محاسبه تراز
- * ⚡ آپدیت شده: دروس/پایه‌های خاموش حذف میشن
  */
 function calculateTraz(majorKey) {
     const major = MAJORS[majorKey];
@@ -695,7 +678,6 @@ function calculateTraz(majorKey) {
     let disabledSubjectNames = [];
 
     for (const [key, def] of Object.entries(subjectDefs)) {
-        /* چک فعال بودن کل درس */
         const subjectEnabled = isSubjectEnabled(key);
 
         if (!subjectEnabled) {
@@ -713,10 +695,9 @@ function calculateTraz(majorKey) {
 
         activeSubjectCount++;
 
-        /* جمع‌آوری نمرات فقط پایه‌های فعال */
-        const scores       = {};
-        const activeGrades = [];
-        let disabledGrades = [];
+        const scores         = {};
+        const activeGrades   = [];
+        let disabledGrades   = [];
 
         def.grades.forEach(grade => {
             if (!isGradeEnabled(key, grade)) {
@@ -737,15 +718,15 @@ function calculateTraz(majorKey) {
         subjectAverages[key] = avg;
 
         details[key] = {
-            name:              def.name,
-            emoji:             def.emoji,
-            konkur_weight:     def.konkur_weight,
-            weightedAverage:   Math.round(avg * 100) / 100,
-            contribution:      Math.round(def.konkur_weight * avg * 100) / 100,
-            disabled:          false,
-            disabledGrades:    disabledGrades,
-            activeGradeCount:  activeGrades.length,
-            totalGradeCount:   def.grades.length,
+            name:             def.name,
+            emoji:            def.emoji,
+            konkur_weight:    def.konkur_weight,
+            weightedAverage:  Math.round(avg * 100) / 100,
+            contribution:     Math.round(def.konkur_weight * avg * 100) / 100,
+            disabled:         false,
+            disabledGrades:   disabledGrades,
+            activeGradeCount: activeGrades.length,
+            totalGradeCount:  def.grades.length,
         };
     }
 
@@ -849,7 +830,6 @@ function renderResult(result) {
     const detailsHTML = Object.entries(result.details).map(([key, d]) => {
         const isDisabled = d.disabled;
 
-        /* نمایش تعداد پایه‌های فعال */
         let gradeInfo = '';
         if (!isDisabled && d.disabledGrades && d.disabledGrades.length > 0) {
             gradeInfo = `<small style="color:var(--pastel-orange);margin-right:4px">
@@ -931,11 +911,15 @@ function resetResultPanel() {
 
 
 /* ────────────────────────────────────────────────────────────────
- *  📸 SECTION 12: PNG Export (خروجی تصویری — نسخه گزارش مشاور)
+ *  📸 SECTION 12: PNG Export — Canvas API (بدون html2canvas!)
  * ──────────────────────────────────────────────────────────────── 
- *  خروجی A4 عمودی (794×1123px @2x)
- *  فقط اطلاعات ضروری: تراز، جزئیات دروس، سطح، فاصله تا اهداف
- *  بدون دکمه، اینپوت، تاگل و فرمول
+ *  🔥 بازنویسی کامل: به جای html2canvas از Canvas 2D API
+ *  مستقیم استفاده میکنیم. اینجوری:
+ *    ✅ مشکل صفحه سفید حل میشه
+ *    ✅ فونت وزیرمتن درست رندر میشه
+ *    ✅ backdrop-filter مشکل نمیسازه
+ *    ✅ خروجی همیشه تمیز و A4 عمودی
+ *    ✅ فقط اطلاعات ضروری (بدون دکمه/اینپوت/تاگل)
  * ──────────────────────────────────────────────────────────────── */
 
 function exportPNG() {
@@ -953,255 +937,385 @@ function exportPNG() {
 
     showToast('📸 در حال ساخت گزارش...');
 
-    /* ───── ابعاد A4 عمودی (96 DPI × 2 برای کیفیت) ───── */
-    const A4_W = 794;
-    const A4_H = 1123;
+    /* ───── ابعاد (2x برای کیفیت بالا) ───── */
+    const SCALE  = 2;
+    const W      = 794;                   /* عرض A4 در 96 DPI */
+    const MARGIN = 40;                    /* حاشیه */
+    const CW     = W - MARGIN * 2;       /* عرض محتوا */
 
-    /* ───── ساخت یک div مخفی برای رندر ───── */
-    const wrapper = document.createElement('div');
-    wrapper.id = 'exportWrapper';
-    wrapper.style.cssText = `
-        position: fixed;
-        top: -99999px;
-        left: -99999px;
-        width: ${A4_W}px;
-        min-height: ${A4_H}px;
-        background: linear-gradient(145deg, #F8F6F2 0%, #F0ECE4 50%, #F8F6F2 100%);
-        font-family: 'Vazirmatn', sans-serif;
-        direction: rtl;
-        padding: 40px;
-        box-sizing: border-box;
-        color: #2D2D3A;
-        overflow: hidden;
-    `;
+    /* ───── فاز ۱: اندازه‌گیری ارتفاع (off-screen) ───── */
+    const measureCanvas = document.createElement('canvas');
+    measureCanvas.width  = W * SCALE;
+    measureCanvas.height = 4000 * SCALE;  /* بزرگ موقت */
+    const mCtx = measureCanvas.getContext('2d');
+    mCtx.scale(SCALE, SCALE);
 
+    /* اندازه‌گیری واقعی ارتفاع */
+    const contentHeight = _drawReport(mCtx, result, W, MARGIN, CW, true);
+    const H = contentHeight + 20;  /* یه کم padding پایین */
+
+    /* ───── فاز ۲: رسم واقعی ───── */
+    const canvas  = document.createElement('canvas');
+    canvas.width  = W * SCALE;
+    canvas.height = H * SCALE;
+    const ctx     = canvas.getContext('2d');
+    ctx.scale(SCALE, SCALE);
+
+    _drawReport(ctx, result, W, MARGIN, CW, false);
+
+    /* ───── دانلود ───── */
+    try {
+        const link       = document.createElement('a');
+        const fieldName  = MAJORS[currentField]?.name || 'taraz';
+        link.download    = `گزارش-تراز-${fieldName}-${Date.now()}.png`;
+        link.href        = canvas.toDataURL('image/png', 1.0);
+        link.click();
+        showToast('✅ گزارش دانلود شد!');
+    } catch (err) {
+        console.error('[ExportPNG]', err);
+        showToast('❌ خطا در ساخت تصویر!');
+    }
+}
+
+/**
+ * 🎨 رسم کامل گزارش روی Canvas
+ * @param {CanvasRenderingContext2D} ctx - کانتکست کانوس
+ * @param {Object} result - نتیجه محاسبه
+ * @param {number} W - عرض کل
+ * @param {number} M - حاشیه
+ * @param {number} CW - عرض محتوا
+ * @param {boolean} measureOnly - فقط اندازه‌گیری (برای فاز ۱)
+ * @returns {number} ارتفاع نهایی محتوا
+ */
+function _drawReport(ctx, result, W, M, CW, measureOnly) {
     const level = result.level;
-    const now = new Date().toLocaleDateString('fa-IR', {
+    const now   = new Date().toLocaleDateString('fa-IR', {
         year: 'numeric', month: 'long', day: 'numeric'
     });
 
-    /* ───── جزئیات دروس ───── */
-    let subjectRowsHTML = '';
-    let rowIndex = 0;
-    for (const [key, d] of Object.entries(result.details)) {
-        const isDisabled = d.disabled;
-        const bgColor = rowIndex % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent';
+    let y = M;  /* مکان‌نمای عمودی */
 
-        let gradeNote = '';
-        if (!isDisabled && d.disabledGrades && d.disabledGrades.length > 0) {
-            gradeNote = `<span style="color:#E6A23C;font-size:11px;margin-right:4px;">
-                (${d.activeGradeCount}/${d.totalGradeCount} پایه)
-            </span>`;
-        }
+    /* ═══════ Helper Functions ═══════ */
 
-        subjectRowsHTML += `
-            <tr style="background:${bgColor};${isDisabled ? 'opacity:0.35;text-decoration:line-through;' : ''}">
-                <td style="padding:10px 14px;text-align:right;font-size:13px;border-bottom:1px solid rgba(0,0,0,0.05);">
-                    ${d.emoji} ${d.name} ${gradeNote}
-                    ${isDisabled ? '<span style="background:#FF6B6B;color:#fff;padding:1px 6px;border-radius:20px;font-size:10px;margin-right:4px;">OFF</span>' : ''}
-                </td>
-                <td style="padding:10px 14px;text-align:center;font-size:13px;font-weight:700;border-bottom:1px solid rgba(0,0,0,0.05);">
-                    ${isDisabled ? '—' : d.weightedAverage + '٪'}
-                </td>
-                <td style="padding:10px 14px;text-align:center;font-size:13px;border-bottom:1px solid rgba(0,0,0,0.05);">
-                    ×${d.konkur_weight}
-                </td>
-            </tr>
-        `;
-        rowIndex++;
+    /** رسم متن RTL */
+    function drawText(text, x, _y, font, color, align = 'right') {
+        if (measureOnly) return;
+        ctx.save();
+        ctx.font      = font;
+        ctx.fillStyle = color;
+        ctx.textAlign = align;
+        ctx.direction = 'rtl';
+        ctx.fillText(text, x, _y);
+        ctx.restore();
     }
 
-    /* ───── اهداف ───── */
-    const targets = [
-        { name: "پزشکی آزاد / سایر", traz: 5700 },
-        { name: "پزشکی اهواز / همدان", traz: 6000 },
-        { name: "پزشکی کرمان / گیلان", traz: 6200 },
-        { name: "پزشکی مشهد / تبریز", traz: 6400 },
-        { name: "پزشکی شیراز / اصفهان", traz: 6700 },
-        { name: "پزشکی تهران / بهشتی", traz: 7000 },
-    ];
+    /** رسم مستطیل گرد */
+    function roundRect(x, _y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, _y);
+        ctx.lineTo(x + w - r, _y);
+        ctx.quadraticCurveTo(x + w, _y, x + w, _y + r);
+        ctx.lineTo(x + w, _y + h - r);
+        ctx.quadraticCurveTo(x + w, _y + h, x + w - r, _y + h);
+        ctx.lineTo(x + r, _y + h);
+        ctx.quadraticCurveTo(x, _y + h, x, _y + h - r);
+        ctx.lineTo(x, _y + r);
+        ctx.quadraticCurveTo(x, _y, x + r, _y);
+        ctx.closePath();
+    }
 
-    let targetsHTML = '';
-    targets.forEach(t => {
-        const diff = t.traz - result.traz;
-        let statusColor, statusText;
-        if (diff <= 0) {
-            statusColor = '#43E97B';
-            statusText = '✅ رسیدی!';
-        } else if (diff <= 300) {
-            statusColor = '#E6A23C';
-            statusText = `⬆️ +${diff}`;
-        } else {
-            statusColor = '#FF6B6B';
-            statusText = `⬆️ +${diff}`;
+    /** رسم کارت با پس‌زمینه */
+    function drawCard(x, _y, w, h, bgColor, borderColor) {
+        if (measureOnly) return;
+        ctx.save();
+
+        /* سایه */
+        ctx.shadowColor   = 'rgba(0, 0, 0, 0.06)';
+        ctx.shadowBlur    = 16;
+        ctx.shadowOffsetY = 4;
+
+        /* بدنه */
+        roundRect(x, _y, w, h, 16);
+        ctx.fillStyle = bgColor || 'rgba(255, 255, 255, 0.75)';
+        ctx.fill();
+
+        /* بوردر */
+        if (borderColor) {
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth   = 1.5;
+            ctx.stroke();
         }
-        targetsHTML += `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed rgba(0,0,0,0.06);font-size:12px;">
-                <span>🏛️ ${t.name}</span>
-                <span style="color:${statusColor};font-weight:700;">${statusText}</span>
-            </div>
-        `;
+
+        ctx.restore();
+    }
+
+    /** رسم بج گرد */
+    function drawBadge(text, centerX, _y, bgColor, textColor, fontSize) {
+        if (measureOnly) return;
+        ctx.save();
+        ctx.font = `bold ${fontSize || 11}px Vazirmatn, sans-serif`;
+        const tw = ctx.measureText(text).width;
+        const pw = 14;  /* padding افقی */
+        const bw = tw + pw * 2;
+        const bh = fontSize ? fontSize + 12 : 24;
+
+        roundRect(centerX - bw / 2, _y, bw, bh, bh / 2);
+        ctx.fillStyle = bgColor;
+        ctx.fill();
+
+        ctx.fillStyle = textColor;
+        ctx.textAlign = 'center';
+        ctx.direction = 'rtl';
+        ctx.fillText(text, centerX, _y + bh / 2 + fontSize / 3);
+        ctx.restore();
+    }
+
+    /** اندازه‌گیری عرض متن */
+    function measureText(text, font) {
+        ctx.save();
+        ctx.font = font;
+        const w = ctx.measureText(text).width;
+        ctx.restore();
+        return w;
+    }
+
+    /* ═══════════════════════════════════════════════
+     *  🎨 بک‌گراند گرادیان
+     * ═══════════════════════════════════════════════ */
+    if (!measureOnly) {
+        const grad = ctx.createLinearGradient(0, 0, W, 4000);
+        grad.addColorStop(0,   '#F8F6F2');
+        grad.addColorStop(0.5, '#F0ECE4');
+        grad.addColorStop(1,   '#F8F6F2');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, 4000);
+    }
+
+    /* ═══════════════════════════════════════════════
+     *  📋 هدر گزارش
+     * ═══════════════════════════════════════════════ */
+    drawText('📊 گزارش تخمین تراز قلم‌چی', W / 2, y + 4, 'bold 20px Vazirmatn, sans-serif', '#2D2D3A', 'center');
+    y += 30;
+
+    drawText(
+        `${result.majorEmoji} رشته: ${result.major}  |  📅 ${now}`,
+        W / 2, y, '500 12px Vazirmatn, sans-serif', '#888', 'center'
+    );
+    y += 20;
+
+    /* خط جداکننده */
+    if (!measureOnly) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+        ctx.lineWidth   = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(M, y);
+        ctx.lineTo(W - M, y);
+        ctx.stroke();
+        ctx.restore();
+    }
+    y += 20;
+
+    /* ═══════════════════════════════════════════════
+     *  🏆 کارت اصلی تراز
+     * ═══════════════════════════════════════════════ */
+    const mainCardH = 170;
+    drawCard(M, y, CW, mainCardH, 'rgba(255, 255, 255, 0.8)', 'rgba(255, 255, 255, 0.5)');
+
+    drawText('تراز تخمینی', W / 2, y + 30, '500 14px Vazirmatn, sans-serif', '#888', 'center');
+
+    drawText(
+        String(result.traz),
+        W / 2, y + 85,
+        'bold 52px Vazirmatn, sans-serif', '#2D2D3A', 'center'
+    );
+
+    /* بج‌های سطح و لیگ */
+    const badgeY = y + 105;
+    drawBadge(`${level.emoji} ${level.name}`, W / 2 - 120, badgeY, 'rgba(67,233,123,0.15)', '#2D8F5E', 11);
+    drawBadge(level.league, W / 2, badgeY, 'rgba(56,178,227,0.1)', '#2878A8', 11);
+    drawBadge(`📏 نمره وزن‌دار: ${result.weightedScore}`, W / 2 + 140, badgeY, 'rgba(176,130,255,0.1)', '#7B52CC', 11);
+
+    drawText(
+        `${result.activeSubjectCount} درس فعال از ${Object.keys(result.details).length}`,
+        W / 2, y + mainCardH - 16, '400 10px Vazirmatn, sans-serif', '#999', 'center'
+    );
+
+    y += mainCardH + 20;
+
+    /* ═══════════════════════════════════════════════
+     *  📋 جدول دروس
+     * ═══════════════════════════════════════════════ */
+    const subjects  = Object.entries(result.details);
+    const tableH    = 44 + subjects.length * 36 + 10;
+
+    drawCard(M, y, CW, tableH, 'rgba(255, 255, 255, 0.7)', 'rgba(255, 255, 255, 0.4)');
+
+    /* عنوان جدول */
+    drawText('📋 میانگین وزن‌دار هر درس', W / 2, y + 24, 'bold 13px Vazirmatn, sans-serif', '#2D2D3A', 'center');
+    y += 42;
+
+    /* هدر جدول */
+    if (!measureOnly) {
+        ctx.save();
+        roundRect(M + 6, y - 4, CW - 12, 28, 6);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    drawText('درس', W - M - 16, y + 14, '600 11px Vazirmatn, sans-serif', '#888', 'right');
+    drawText('میانگین', W / 2 + 20, y + 14, '600 11px Vazirmatn, sans-serif', '#888', 'center');
+    drawText('ضریب', M + 50, y + 14, '600 11px Vazirmatn, sans-serif', '#888', 'center');
+    y += 32;
+
+    /* ردیف‌های دروس */
+    subjects.forEach(([key, d], idx) => {
+        const isDisabled = d.disabled;
+
+        /* پس‌زمینه ردیف‌های زوج */
+        if (!measureOnly && idx % 2 === 0) {
+            ctx.save();
+            roundRect(M + 6, y - 6, CW - 12, 32, 4);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.015)';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        const textColor = isDisabled ? '#CCC' : '#2D2D3A';
+        const subFont   = isDisabled ? '500 12px Vazirmatn, sans-serif' : '600 12px Vazirmatn, sans-serif';
+
+        let subjectLabel = `${d.emoji} ${d.name}`;
+        if (isDisabled) subjectLabel += ' (OFF)';
+        if (!isDisabled && d.disabledGrades && d.disabledGrades.length > 0) {
+            subjectLabel += ` (${d.activeGradeCount}/${d.totalGradeCount})`;
+        }
+
+        drawText(subjectLabel, W - M - 16, y + 14, subFont, textColor, 'right');
+        drawText(
+            isDisabled ? '—' : d.weightedAverage + '٪',
+            W / 2 + 20, y + 14,
+            'bold 12px Vazirmatn, sans-serif',
+            isDisabled ? '#CCC' : '#2D2D3A', 'center'
+        );
+        drawText(
+            '×' + d.konkur_weight,
+            M + 50, y + 14,
+            '500 12px Vazirmatn, sans-serif',
+            isDisabled ? '#CCC' : '#666', 'center'
+        );
+
+        /* خط‌خوردگی برای درس غیرفعال */
+        if (!measureOnly && isDisabled) {
+            ctx.save();
+            const tw = measureText(subjectLabel, subFont);
+            ctx.strokeStyle = '#FFB5C2';
+            ctx.lineWidth   = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(W - M - 16, y + 10);
+            ctx.lineTo(W - M - 16 - tw, y + 10);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        y += 36;
     });
 
-    /* ───── هشدار دروس غیرفعال ───── */
-    let disabledWarning = '';
+    y += 16;
+
+    /* ═══════════════════════════════════════════════
+     *  🎯 فاصله تا اهداف
+     * ═══════════════════════════════════════════════ */
+    const targets = [
+        { name: "پزشکی آزاد / سایر",       traz: 5700 },
+        { name: "پزشکی اهواز / همدان",      traz: 6000 },
+        { name: "پزشکی کرمان / گیلان",      traz: 6200 },
+        { name: "پزشکی مشهد / تبریز",       traz: 6400 },
+        { name: "پزشکی شیراز / اصفهان",     traz: 6700 },
+        { name: "پزشکی تهران / بهشتی",      traz: 7000 },
+    ];
+
+    const targetCardH = 40 + targets.length * 32 + 10;
+    drawCard(M, y, CW, targetCardH, 'rgba(255, 255, 255, 0.7)', 'rgba(255, 255, 255, 0.4)');
+
+    drawText('🎯 فاصله تا اهداف', W / 2, y + 24, 'bold 13px Vazirmatn, sans-serif', '#2D2D3A', 'center');
+    y += 42;
+
+    targets.forEach(t => {
+        const diff = t.traz - result.traz;
+        let statusText, statusColor;
+
+        if (diff <= 0) {
+            statusText  = '✅ رسیدی!';
+            statusColor = '#2D8F5E';
+        } else if (diff <= 300) {
+            statusText  = `⬆️ +${diff}`;
+            statusColor = '#C07800';
+        } else {
+            statusText  = `⬆️ +${diff}`;
+            statusColor = '#CC3344';
+        }
+
+        drawText(`🏛️ ${t.name}`, W - M - 16, y + 12, '500 11px Vazirmatn, sans-serif', '#555', 'right');
+        drawText(statusText, M + 60, y + 12, 'bold 11px Vazirmatn, sans-serif', statusColor, 'center');
+
+        /* خط‌چین جداکننده */
+        if (!measureOnly) {
+            ctx.save();
+            ctx.setLineDash([3, 3]);
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)';
+            ctx.lineWidth   = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(M + 10, y + 26);
+            ctx.lineTo(W - M - 10, y + 26);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        y += 32;
+    });
+
+    y += 14;
+
+    /* ═══════════════════════════════════════════════
+     *  ⚠️ هشدار دروس غیرفعال (اختیاری)
+     * ═══════════════════════════════════════════════ */
     if (result.disabledSubjectNames.length > 0) {
-        disabledWarning = `
-            <div style="margin-top:20px;padding:12px 16px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:12px;">
-                <div style="font-size:12px;font-weight:700;color:#FF6B6B;margin-bottom:6px;">⚠️ دروس حذف‌شده از محاسبه:</div>
-                <div style="font-size:11px;color:#666;">
-                    ${result.disabledSubjectNames.map(n => `🔇 ${n}`).join(' &nbsp;•&nbsp; ')}
-                </div>
-            </div>
-        `;
+        const warnH = 50;
+        drawCard(M, y, CW, warnH, 'rgba(255,107,107,0.06)', 'rgba(255,107,107,0.2)');
+
+        drawText(
+            '⚠️ دروس حذف‌شده: ' + result.disabledSubjectNames.map(n => `🔇${n}`).join(' • '),
+            W / 2, y + 30, '600 11px Vazirmatn, sans-serif', '#CC4444', 'center'
+        );
+
+        y += warnH + 14;
     }
 
-    /* ───── تزریق HTML کامل گزارش ───── */
-    wrapper.innerHTML = `
-        <!-- هدر گزارش -->
-        <div style="text-align:center;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid rgba(0,0,0,0.06);">
-            <div style="font-size:22px;font-weight:900;color:#2D2D3A;margin-bottom:4px;">
-                📊 گزارش تخمین تراز قلم‌چی
-            </div>
-            <div style="font-size:12px;color:#888;margin-top:6px;">
-                ${result.majorEmoji} رشته: ${result.major} &nbsp;|&nbsp; 📅 تاریخ: ${now}
-            </div>
-        </div>
+    /* ═══════════════════════════════════════════════
+     *  🔖 فوتر
+     * ═══════════════════════════════════════════════ */
+    /* خط جداکننده */
+    if (!measureOnly) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)';
+        ctx.lineWidth   = 1;
+        ctx.beginPath();
+        ctx.moveTo(M, y);
+        ctx.lineTo(W - M, y);
+        ctx.stroke();
+        ctx.restore();
+    }
+    y += 18;
 
-        <!-- کارت اصلی تراز -->
-        <div style="
-            background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.5));
-            border: 1px solid rgba(255,255,255,0.4);
-            border-radius: 20px;
-            padding: 28px;
-            text-align: center;
-            margin-bottom: 24px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.06);
-        ">
-            <div style="font-size:14px;color:#888;margin-bottom:8px;">تراز تخمینی</div>
-            <div style="font-size:56px;font-weight:900;color:#2D2D3A;line-height:1.1;">
-                ${result.traz}
-            </div>
-            <div style="margin-top:12px;display:inline-flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center;">
-                <span style="background:rgba(67,233,123,0.15);color:#2D8F5E;padding:6px 16px;border-radius:50px;font-size:13px;font-weight:700;">
-                    ${level.emoji} ${level.name}
-                </span>
-                <span style="background:rgba(56,178,227,0.1);color:#2878A8;padding:6px 16px;border-radius:50px;font-size:13px;font-weight:700;">
-                    ${level.league}
-                </span>
-                <span style="background:rgba(176,130,255,0.1);color:#7B52CC;padding:6px 16px;border-radius:50px;font-size:13px;font-weight:700;">
-                    📏 نمره وزن‌دار: ${result.weightedScore}
-                </span>
-            </div>
-            <div style="margin-top:10px;font-size:11px;color:#999;">
-                ${result.activeSubjectCount} درس فعال از ${Object.keys(result.details).length}
-            </div>
-        </div>
+    drawText(
+        `🛠️ ابزار تخمین تراز قلم‌چی v${MODEL_CONFIG.version}  |  این تخمین جایگزین نتایج رسمی نیست`,
+        W / 2, y, '400 9px Vazirmatn, sans-serif', '#AAA', 'center'
+    );
 
-        <!-- جدول دروس -->
-        <div style="
-            background: rgba(255,255,255,0.6);
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 16px;
-            overflow: hidden;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-        ">
-            <div style="padding:14px 18px;font-size:14px;font-weight:800;border-bottom:1px solid rgba(0,0,0,0.06);">
-                📋 میانگین وزن‌دار هر درس
-            </div>
-            <table style="width:100%;border-collapse:collapse;">
-                <thead>
-                    <tr style="background:rgba(0,0,0,0.03);">
-                        <th style="padding:10px 14px;text-align:right;font-size:11px;color:#888;font-weight:600;">درس</th>
-                        <th style="padding:10px 14px;text-align:center;font-size:11px;color:#888;font-weight:600;">میانگین</th>
-                        <th style="padding:10px 14px;text-align:center;font-size:11px;color:#888;font-weight:600;">ضریب</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${subjectRowsHTML}
-                </tbody>
-            </table>
-        </div>
+    y += 20;
 
-        <!-- فاصله تا اهداف -->
-        <div style="
-            background: rgba(255,255,255,0.6);
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 16px;
-            padding: 18px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-        ">
-            <div style="font-size:14px;font-weight:800;margin-bottom:12px;">🎯 فاصله تا اهداف</div>
-            ${targetsHTML}
-        </div>
-
-        ${disabledWarning}
-
-        <!-- فوتر -->
-        <div style="
-            text-align: center;
-            margin-top: 24px;
-            padding-top: 16px;
-            border-top: 1px solid rgba(0,0,0,0.06);
-            font-size: 10px;
-            color: #AAA;
-        ">
-            🛠️ ساخته‌شده با ابزار تخمین تراز قلم‌چی v${MODEL_CONFIG.version}
-            &nbsp;|&nbsp;
-            این تخمین جایگزین نتایج رسمی نیست و صرفاً جهت برنامه‌ریزی است.
-        </div>
-    `;
-
-    /* ───── تزریق به DOM و رندر ───── */
-    document.body.appendChild(wrapper);
-
-    /* صبر برای رندر کامل فونت‌ها و لی‌اوت */
-    setTimeout(() => {
-        html2canvas(wrapper, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: null,   /* ← مهم! لایه سفید اضافی حذف میشه */
-            logging: false,
-            width: A4_W,
-            height: Math.max(A4_H, wrapper.scrollHeight),
-            windowWidth: A4_W,
-            windowHeight: Math.max(A4_H, wrapper.scrollHeight),
-        }).then(canvas => {
-            /* ─── ساخت canvas نهایی با بک‌گراند ─── */
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width  = canvas.width;
-            finalCanvas.height = canvas.height;
-            const ctx = finalCanvas.getContext('2d');
-
-            /* بک‌گراند گرادیان */
-            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            gradient.addColorStop(0, '#F8F6F2');
-            gradient.addColorStop(0.5, '#F0ECE4');
-            gradient.addColorStop(1, '#F8F6F2');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            /* رسم محتوا روی بک‌گراند */
-            ctx.drawImage(canvas, 0, 0);
-
-            /* دانلود */
-            const link = document.createElement('a');
-            const fieldName = MAJORS[currentField]?.name || 'taraz';
-            link.download = `گزارش-تراز-${fieldName}-${Date.now()}.png`;
-            link.href = finalCanvas.toDataURL('image/png', 0.95);
-            link.click();
-
-            showToast('✅ گزارش A4 دانلود شد!');
-        }).catch(err => {
-            console.error('[ExportPNG] Error:', err);
-            showToast('❌ خطا در ساخت تصویر!');
-        }).finally(() => {
-            /* پاکسازی wrapper مخفی */
-            wrapper.remove();
-        });
-    }, 500);
+    return y;  /* ارتفاع نهایی */
 }
 
 
@@ -1214,12 +1328,10 @@ function resetAll() {
 
     for (const [majorKey, major] of Object.entries(MAJORS)) {
         for (const [subKey, def] of Object.entries(major.subjects)) {
-            /* پاک‌سازی درصدها */
             def.grades.forEach(grade => {
                 localStorage.removeItem(`kd_${subKey}_${grade}`);
                 localStorage.removeItem(`kd_toggle_grade_${subKey}_${grade}`);
             });
-            /* پاک‌سازی تاگل درس */
             localStorage.removeItem(`kd_toggle_subject_${subKey}`);
         }
     }
@@ -1317,5 +1429,3 @@ function showToast(message) {
         selectField(currentField);
     }
 })();
-
-
