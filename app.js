@@ -648,12 +648,12 @@ function calcWeightedScore(subjectAverages, subjectDefs) {
 function getLevel(traz) {
     const levels = [
         { min: 7500, name: "L5+", emoji: "👑", university: "پزشکی تهران / شهید بهشتی",  league: "لیگ خدایان ⚡"   },
-        { min: 7000, name: "L5",  emoji: "🏆", university: "پزشکی شهید بهشتی / تهران",  league: "لیگ خدایان ⚡"   },
-        { min: 6700, name: "L4+", emoji: "🥇", university: "پزشکی شیراز / اصفهان",      league: "لیگ قهرمانان 🌟" },
-        { min: 6400, name: "L4",  emoji: "🎯", university: "پزشکی مشهد / تبریز",        league: "لیگ قهرمانان 🌟" },
-        { min: 6200, name: "L3",  emoji: "🔥", university: "پزشکی کرمان / گیلان",       league: "لیگ حرفه‌ای 💪"  },
-        { min: 6000, name: "L2",  emoji: "📈", university: "پزشکی اهواز / همدان",       league: "لیگ صعود 🚀"    },
-        { min: 5700, name: "L1",  emoji: "🌱", university: "پزشکی آزاد / سایر",         league: "لیگ شروع 🌱"    },
+        { min: 7200, name: "L5",  emoji: "🏆", university: "پزشکی شهید بهشتی / تهران",  league: "لیگ خدایان ⚡"   },
+        { min: 7000, name: "L4+", emoji: "🥇", university: "پزشکی شیراز / اصفهان",      league: "لیگ قهرمانان 🌟" },
+        { min: 6700, name: "L4",  emoji: "🎯", university: "پزشکی مشهد / تبریز",        league: "لیگ قهرمانان 🌟" },
+        { min: 6300, name: "L3",  emoji: "🔥", university: "پزشکی کرمان / گیلان",       league: "لیگ حرفه‌ای 💪"  },
+        { min: 5900, name: "L2",  emoji: "📈", university: "پزشکی اهواز / همدان",       league: "لیگ صعود 🚀"    },
+        { min: 5250, name: "L1",  emoji: "🌱", university: "پزشکی آزاد / سایر",         league: "لیگ شروع 🌱"    },
         { min: 0,    name: "L0",  emoji: "⚪", university: "نیاز به تلاش بیشتر",         league: "پیش‌فصل ⚪"     },
     ];
 
@@ -797,12 +797,12 @@ function renderResult(result) {
 
     /* ───── تارگت‌ها ───── */
     const targets = [
-        { name: "L1 — پزشکی آزاد",            traz: 5700 },
-        { name: "L2 — پزشکی اهواز/همدان",     traz: 6000 },
-        { name: "L3 — پزشکی کرمان/گیلان",     traz: 6200 },
-        { name: "L4 — پزشکی مشهد/تبریز",      traz: 6400 },
-        { name: "L4+ — پزشکی شیراز/اصفهان",   traz: 6700 },
-        { name: "L5 — پزشکی تهران/بهشتی",     traz: 7000 },
+        { name: "L1 — پزشکی آزاد،پردیس،مازاد",            traz: 5700 },
+        { name: "L2 — پزشکی یاسوج،بوشهر،ایلام،ساری،یزد،ارومیه،کاشان،زنجان",     traz: 5900 },
+        { name: "L3 — پزشکی کرمانگیلان،تبریز،اهواز،کرمانشاه،همدان،بابل",     traz: 6300 },
+        { name: "L4 — پزشکی شیراز،اصفهان،مشهد",      traz: 6700 },
+        { name: "L4+ — پزشکی قطعی شیراز،اصفهان،مشهد",   traz: 7000 },
+        { name: "L5 — پزشکی تهران،بهشتی،ایران",     traz: 7200 },
     ];
 
     const targetsHTML = targets.map(t => {
