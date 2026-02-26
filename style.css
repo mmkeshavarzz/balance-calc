@@ -1,5 +1,5 @@
 /* ================================================================
- *  📊 Kankor Dashboard v1.2.0 — Stylesheet
+ *  📊 Kankor Dashboard v1.2.1 — Stylesheet
  *  ================================================================
  *  Design System: Bento Grid 30% + Glassmorphism 40% + Neumorphism 30%
  *  Theme: Pearl White + Pastel Accents
@@ -1326,5 +1326,6 @@ body::after {
     text-decoration-color: var(--pastel-pink);
     text-decoration-thickness: 2px;
 }
+
 
 
