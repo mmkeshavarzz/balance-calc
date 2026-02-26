@@ -1,10 +1,10 @@
 /* ================================================================
- *  📊 Kankor Dashboard v1.2.0 — Application Logic
+ *  📊 Kankor Dashboard v1.2.1 — Application Logic
  *  ================================================================
  *  Engine: Hybrid Constrained Regression Model
  *  Formula: Traz = β₀ + k × S_weighted
  *  
- *  NEW in v1.2.0:
+ *  NEW in v1.2.1:
  *    - Toggle subject ON/OFF (exclude from calculation)
  *    - Toggle individual grade ON/OFF
  *    - Persistent toggle state in localStorage
@@ -1317,4 +1317,5 @@ function showToast(message) {
         selectField(currentField);
     }
 })();
+
 
